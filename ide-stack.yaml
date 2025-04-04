@@ -1,3 +1,7 @@
+Parameters:
+  SsmLatestAmiParameter:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
 Resources:
   IdeVpc:
     Type: AWS::EC2::VPC
@@ -9,7 +13,8 @@ Resources:
       Tags:
         - Key: Name
           Value: ide-vpc
-  IdeVpcPublicSubnet1Subnet5568D48C:
+
+  IdeVpcPublicSubnet1Subnet:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone:
@@ -27,7 +32,8 @@ Resources:
           Value: ide-stack/IdeVpc/Vpc/PublicSubnet1
       VpcId:
         Ref: IdeVpc
-  IdeVpcPublicSubnet1RouteTableA7BDEA5B:
+
+  IdeVpcPublicSubnet1RouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
@@ -35,24 +41,27 @@ Resources:
           Value: ide-stack/IdeVpc/Vpc/PublicSubnet1
       VpcId:
         Ref: IdeVpc
-  IdeVpcPublicSubnet1RouteTableAssociationA08234BF:
+
+  IdeVpcPublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId:
-        Ref: IdeVpcPublicSubnet1RouteTableA7BDEA5B
+        Ref: IdeVpcPublicSubnet1RouteTable
       SubnetId:
-        Ref: IdeVpcPublicSubnet1Subnet5568D48C
-  IdeVpcPublicSubnet1DefaultRoute7516054E:
+        Ref: IdeVpcPublicSubnet1Subnet
+
+  IdeVpcPublicSubnet1DefaultRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId:
-        Ref: IdeVpcIGWDE157DA5
+        Ref: IdeVpcIGW
       RouteTableId:
-        Ref: IdeVpcPublicSubnet1RouteTableA7BDEA5B
+        Ref: IdeVpcPublicSubnet1RouteTable
     DependsOn:
-      - IdeVpcVPCGWC86E365B
-  IdeVpcPublicSubnet2Subnet8D75E006:
+      - IdeVpcVPCGWC
+
+  IdeVpcPublicSubnet2Subnet:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone:
@@ -70,7 +79,8 @@ Resources:
           Value: ide-stack/IdeVpc/Vpc/PublicSubnet2
       VpcId:
         Ref: IdeVpc
-  IdeVpcPublicSubnet2RouteTable3725D67C:
+
+  IdeVpcPublicSubnet2RouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
@@ -78,39 +88,46 @@ Resources:
           Value: ide-stack/IdeVpc/Vpc/PublicSubnet2
       VpcId:
         Ref: IdeVpc
-  IdeVpcPublicSubnet2RouteTableAssociation47C63A38:
+
+  IdeVpcPublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId:
-        Ref: IdeVpcPublicSubnet2RouteTable3725D67C
+        Ref: IdeVpcPublicSubnet2RouteTable
       SubnetId:
-        Ref: IdeVpcPublicSubnet2Subnet8D75E006
-  IdeVpcPublicSubnet2DefaultRouteE1DC8F35:
+        Ref: IdeVpcPublicSubnet2Subnet
+
+  IdeVpcPublicSubnet2DefaultRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId:
-        Ref: IdeVpcIGWDE157DA5
+        Ref: IdeVpcIGW
       RouteTableId:
-        Ref: IdeVpcPublicSubnet2RouteTable3725D67C
+        Ref: IdeVpcPublicSubnet2RouteTable
     DependsOn:
-      - IdeVpcVPCGWC86E365B
-  IdeVpcIGWDE157DA5:
+      - IdeVpcVPCGWC
+
+  IdeVpcIGW:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
           Value: ide-vpc
-  IdeVpcVPCGWC86E365B:
+
+  IdeVpcVPCGWC:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       InternetGatewayId:
-        Ref: IdeVpcIGWDE157DA5
+        Ref: IdeVpcIGW
       VpcId:
         Ref: IdeVpc
-  VSCodeIdeIdeRole21951A1F:
+
+  VSCodeIdeEc2Role:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: VSCodeIdeEc2Role
+      Description: Role for VSCode IDE
       AssumeRolePolicyDocument:
         Statement:
           - Action: sts:AssumeRole
@@ -123,105 +140,22 @@ Resources:
             - ""
             - - "arn:"
               - Ref: AWS::Partition
-              - :iam::aws:policy/ReadOnlyAccess
-        - Fn::Join:
-            - ""
-            - - "arn:"
-              - Ref: AWS::Partition
-              - :iam::aws:policy/AmazonSSMManagedInstanceCore
-        - Ref: VSCodeIdeWorkshopIdeUserPolicy98DFEC00
-      RoleName: ide-user
-  VSCodeIdeIdeRoleDefaultPolicyB89C55CF:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyDocument:
-        Statement:
-          - Action:
-              - logs:CreateLogStream
-              - logs:PutLogEvents
-            Effect: Allow
-            Resource:
-              Fn::GetAtt:
-                - VSCodeIdeIdeLogGroup364F2B78
-                - Arn
-          - Action:
-              - secretsmanager:GetSecretValue
-              - secretsmanager:DescribeSecret
-            Effect: Allow
-            Resource:
-              Ref: VSCodeIdeIdePasswordSecret39AD78F3
-        Version: "2012-10-17"
-      PolicyName: VSCodeIdeIdeRoleDefaultPolicyB89C55CF
-      Roles:
-        - Ref: VSCodeIdeIdeRole21951A1F
-  VSCodeIdeWorkshopIdeUserPolicy98DFEC00:
+              - :iam::aws:policy/AdministratorAccess
+        - Ref: IdeDenyLargeResourcesPolicy
+
+  IdeDenyLargeResourcesPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       Description: ""
+      ManagedPolicyName: IdeDenyLargeResourcesPolicy
       Path: /
       PolicyDocument:
         Statement:
-          - Action:
-              - cloudwatch:*
-              - codewhisperer:*
-              - ecr:*
-              - eks:*
-              - iam:CreateOpenIDConnectProvider
-              - iam:TagOpenIDConnectProvider
-              - events:*
-              - q:*
-              - secretsmanager:*
-              - ssm:*
-              - sts:*
-            Effect: Allow
-            Resource: "*"
-            Sid: AllowedServicesEKS
-          - Action: iam:PassRole
-            Effect: Allow
-            Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/unicorn*
-            Sid: PassRoleEKS
-          - Action:
-              - iam:CreateRole
-              - iam:TagRole
-              - iam:DeleteRole
-              - iam:CreatePolicy
-              - iam:CreatePolicyVersion
-              - iam:DeletePolicy
-              - iam:DeletePolicyVersion
-              - iam:AttachRolePolicy
-              - iam:DetachRolePolicy
-              - iam:PutRolePolicy
-              - iam:DeleteRolePolicy
-              - iam:PassRole
-            Effect: Allow
-            Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/*unicorn*
-              - !Sub arn:aws:iam::${AWS::AccountId}:policy/*unicorn*
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/*Unicorn*
-              - !Sub arn:aws:iam::${AWS::AccountId}:policy/*Unicorn*
-              - !Sub arn:aws:iam::${AWS::AccountId}:policy/*AWSLambdaTracerAccessExecutionRole*
-            Sid: IamLimitedAccessForUnicorns
-          - Action:
-              - cloudformation:*
-              - codeartifact:*
-              - apprunner:*
-              - ec2:*
-              - ecs:*
-              - elasticloadbalancing:*
-              - xray:*
-              - logs:*
-              - lambda:*
-              - dynamodb:*
-              - s3:*
-              - tag:*
-              - application-signals:*
-            Effect: Allow
-            Resource: "*"
-            Sid: AllowedServicesOthers
           - Action: ec2:RunInstances
             Condition:
               StringLike:
                 ec2:InstanceType:
+                  - "*2xlarge"
                   - "*4xlarge"
                   - "*6xlarge"
                   - "*8xlarge"
@@ -249,16 +183,27 @@ Resources:
             Resource: "*"
             Sid: DenyReservations
         Version: "2012-10-17"
-  VSCodeIdeIdeLogGroup364F2B78:
+
+  VSCodeIdeLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: ide-bootstrap-log-20250315-154829
+      LogGroupName: ide-bootstrap-log
       RetentionInDays: 1
       UpdateReplacePolicy: Delete
       DeletionPolicy: Delete
-  VSCodeIdeIdePrefixListFunctionServiceRoleE64D8247:
+
+  VSCodeIdePrefixListFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: ide-prefix-list-lambda
+      RetentionInDays: 1
+      UpdateReplacePolicy: Delete
+      DeletionPolicy: Delete
+
+  VSCodeIdePrefixListFunctionServiceRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: VSCodeIdePrefixListFunctionServiceRole
       AssumeRolePolicyDocument:
         Statement:
           - Action: sts:AssumeRole
@@ -272,7 +217,8 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  VSCodeIdeIdePrefixListFunctionServiceRoleDefaultPolicy244F9A17:
+
+  VSCodeIdePrefixListFunctionServiceRoleDefaultPolicy:
     Type: AWS::IAM::Policy
     Properties:
       PolicyDocument:
@@ -281,12 +227,17 @@ Resources:
             Effect: Allow
             Resource: "*"
         Version: "2012-10-17"
-      PolicyName: VSCodeIdeIdePrefixListFunctionServiceRoleDefaultPolicy244F9A17
+      PolicyName: VSCodeIdePrefixListFunctionServiceRoleDefaultPolicy
       Roles:
-        - Ref: VSCodeIdeIdePrefixListFunctionServiceRoleE64D8247
-  VSCodeIdeIdePrefixListFunction06300AAE:
+        - Ref: VSCodeIdePrefixListFunctionServiceRole
+
+  VSCodeIdePrefixListFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: ide-prefix-list-lambda
+      LoggingConfig:
+        LogGroup:
+          Ref: VSCodeIdePrefixListFunctionLogGroup
       Code:
         ZipFile: |-
           from __future__ import print_function
@@ -324,53 +275,62 @@ Resources:
                       responseData = {'Error': tb_err}
                   finally:
                       cfnresponse.send(event, context, status, responseData, 'CustomResourcePhysicalID')
-      FunctionName: ide-prefix-list-lambda
       Handler: index.lambda_handler
       Role:
         Fn::GetAtt:
-          - VSCodeIdeIdePrefixListFunctionServiceRoleE64D8247
+          - VSCodeIdePrefixListFunctionServiceRole
           - Arn
       Runtime: python3.13
       Timeout: 180
     DependsOn:
-      - VSCodeIdeIdePrefixListFunctionServiceRoleDefaultPolicy244F9A17
-      - VSCodeIdeIdePrefixListFunctionServiceRoleE64D8247
-  VSCodeIdeIdePrefixListResourceF63186FA:
+      - VSCodeIdePrefixListFunctionServiceRoleDefaultPolicy
+      - VSCodeIdePrefixListFunctionServiceRole
+
+  VSCodeIdePrefixListResource:
     Type: AWS::CloudFormation::CustomResource
     Properties:
       ServiceToken:
         Fn::GetAtt:
-          - VSCodeIdeIdePrefixListFunction06300AAE
+          - VSCodeIdePrefixListFunction
           - Arn
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-  VSCodeIdeIdeSecurityGroup69EC68AF:
+
+  VSCodeIdeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: IDE security group
       GroupName: ide-cloudfront-ide-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 18.202.216.48/29
+          Description: Allow Instance Connect (eu-west-1)
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
           Description: Allow all outbound traffic by default
           IpProtocol: "-1"
       VpcId:
         Ref: IdeVpc
-  VSCodeIdeIdeSecurityGroupfromIndirectPeer80614C2C39:
+
+  VSCodeIdeSecurityGroupfromIndirectPeer:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: HTTP from CloudFront only
       FromPort: 80
       GroupId:
         Fn::GetAtt:
-          - VSCodeIdeIdeSecurityGroup69EC68AF
+          - VSCodeIdeSecurityGroup
           - GroupId
       IpProtocol: tcp
       SourcePrefixListId:
         Fn::GetAtt:
-          - VSCodeIdeIdePrefixListResourceF63186FA
+          - VSCodeIdePrefixListResource
           - PrefixListId
       ToPort: 80
-  VSCodeIdeAppSecurityGroup3CD2EECD:
+
+  VSCodeIdeAppSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: App security group
@@ -387,18 +347,21 @@ Resources:
           ToPort: 8080
       VpcId:
         Ref: IdeVpc
-  VSCodeIdeIdeInstanceProfileD50529DC:
+
+  VSCodeIdeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       InstanceProfileName:
-        Ref: VSCodeIdeIdeRole21951A1F
+        Ref: VSCodeIdeEc2Role
       Roles:
-        - Ref: VSCodeIdeIdeRole21951A1F
-  VSCodeIdeIdeElasticIP9EC1C0FF:
+        - Ref: VSCodeIdeEc2Role
+
+  VSCodeIdeElasticIP:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
-  VSCodeIdeIdeEC2Instance846AE373:
+
+  VSCodeIdeEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone:
@@ -413,86 +376,91 @@ Resources:
             VolumeSize: 50
             VolumeType: gp3
       IamInstanceProfile:
-        Ref: VSCodeIdeIdeInstanceProfileD50529DC
+        Ref: VSCodeIdeInstanceProfile
       ImageId:
-        Ref: SsmParameterValueawsserviceamiamazonlinuxlatestal2023amikernel61x8664C96584B6F00A464EAD1953AFF4B05118Parameter
+        Ref: SsmLatestAmiParameter
       InstanceType: t3.medium
       SecurityGroupIds:
         - Fn::GetAtt:
-            - VSCodeIdeIdeSecurityGroup69EC68AF
+            - VSCodeIdeSecurityGroup
             - GroupId
         - Fn::GetAtt:
-            - VSCodeIdeIdeInternalSecurityGroup84C0CB7B
+            - VSCodeIdeInternalSecurityGroup
             - GroupId
         - Fn::GetAtt:
-            - VSCodeIdeAppSecurityGroup3CD2EECD
+            - VSCodeIdeAppSecurityGroup
             - GroupId
       SubnetId:
-        Ref: IdeVpcPublicSubnet1Subnet5568D48C
+        Ref: IdeVpcPublicSubnet1Subnet
       Tags:
         - Key: Name
           Value: ide
       UserData:
         Fn::Base64: "#!/bin/bash"
     DependsOn:
-      - VSCodeIdeIdePasswordSecret39AD78F3
-      - VSCodeIdeIdeRoleDefaultPolicyB89C55CF
-      - VSCodeIdeIdeRole21951A1F
-  VSCodeIdeIdeEipAssociation5CF25E52:
+      - VSCodeIdePasswordSecret
+      - VSCodeIdeEc2Role
+
+  VSCodeIdeEipAssociation:
     Type: AWS::EC2::EIPAssociation
     Properties:
       AllocationId:
         Fn::GetAtt:
-          - VSCodeIdeIdeElasticIP9EC1C0FF
+          - VSCodeIdeElasticIP
           - AllocationId
       InstanceId:
-        Ref: VSCodeIdeIdeEC2Instance846AE373
-  VSCodeIdeIdeInternalSecurityGroup84C0CB7B:
+        Ref: VSCodeIdeEC2Instance
+
+  VSCodeIdeInternalSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: IDE internal security group
       GroupName: ide-internal-sg
       VpcId:
         Ref: IdeVpc
-  VSCodeIdeIdeInternalSecurityGroupfromidestackVSCodeIdeIdeInternalSecurityGroup1B3E620BALLTRAFFIC5FBB443A:
+
+  VSCodeIdeInternalSecurityGroupfromidestackVSCodeIdeInternalSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: Allow all internal traffic
       GroupId:
         Fn::GetAtt:
-          - VSCodeIdeIdeInternalSecurityGroup84C0CB7B
+          - VSCodeIdeInternalSecurityGroup
           - GroupId
       IpProtocol: "-1"
       SourceSecurityGroupId:
         Fn::GetAtt:
-          - VSCodeIdeIdeInternalSecurityGroup84C0CB7B
+          - VSCodeIdeInternalSecurityGroup
           - GroupId
-  VSCodeIdeIdeInternalSecurityGrouptoidestackVSCodeIdeIdeInternalSecurityGroup1B3E620BALLTRAFFIC7F2B7031:
+
+  VSCodeIdeInternalSecurityGrouptoidestackVSCodeIdeInternalSecurityGroupEgress:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
       Description: Allow all internal traffic
       DestinationSecurityGroupId:
         Fn::GetAtt:
-          - VSCodeIdeIdeInternalSecurityGroup84C0CB7B
+          - VSCodeIdeInternalSecurityGroup
           - GroupId
       GroupId:
         Fn::GetAtt:
-          - VSCodeIdeIdeInternalSecurityGroup84C0CB7B
+          - VSCodeIdeInternalSecurityGroup
           - GroupId
       IpProtocol: "-1"
-  VSCodeIdeIdeBootstrapWaitConditionHandle0A599C82:
+
+  VSCodeIdeBootstrapWaitConditionHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
-  VSCodeIdeIdeBootstrapWaitConditionEDA1E0E7:
+  VSCodeIdeBootstrapWaitConditionEDA1E0E7:
     Type: AWS::CloudFormation::WaitCondition
     Properties:
       Count: 1
       Handle:
-        Ref: VSCodeIdeIdeBootstrapWaitConditionHandle0A599C82
-      Timeout: "1800"
+        Ref: VSCodeIdeBootstrapWaitConditionHandle
+      Timeout: "900"
     DependsOn:
-      - VSCodeIdeIdeBootstrapDocument8DDB05AD
-      - VSCodeIdeIdeEC2Instance846AE373
-  VSCodeIdeIdeDistribution613960F4:
+      - VSCodeIdeBootstrapDocument
+      - VSCodeIdeEC2Instance
+
+  VSCodeIdeDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
@@ -508,7 +476,7 @@ Resources:
           CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
           Compress: true
           OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
-          TargetOriginId: idestackVSCodeIdeIdeDistributionOrigin12E9C5C1A
+          TargetOriginId: idestackVSCodeIdeDistributionOrigin
           ViewerProtocolPolicy: allow-all
         Enabled: true
         HttpVersion: http2
@@ -521,14 +489,15 @@ Resources:
                 - TLSv1.2
             DomainName:
               Fn::GetAtt:
-                - VSCodeIdeIdeEC2Instance846AE373
+                - VSCodeIdeEC2Instance
                 - PublicDnsName
-            Id: idestackVSCodeIdeIdeDistributionOrigin12E9C5C1A
+            Id: idestackVSCodeIdeDistributionOrigin
     DependsOn:
-      - VSCodeIdeIdeEipAssociation5CF25E52
+      - VSCodeIdeEipAssociation
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-  VSCodeIdeIdePasswordSecret39AD78F3:
+
+  VSCodeIdePasswordSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
       GenerateSecretString:
@@ -541,9 +510,11 @@ Resources:
       Name: ide-password-lambda
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-  VSCodeIdeIdePasswordExporterFunctionServiceRoleAC3A4C16:
+
+  VSCodeIdePasswordExporterFunctionServiceRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: VSCodeIdePasswordExporterFunctionServiceRole
       AssumeRolePolicyDocument:
         Statement:
           - Action: sts:AssumeRole
@@ -557,7 +528,8 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  VSCodeIdeIdePasswordExporterFunctionServiceRoleDefaultPolicy0FACB966:
+
+  VSCodeIdePasswordExporterFunctionServiceRolePolicy:
     Type: AWS::IAM::Policy
     Properties:
       PolicyDocument:
@@ -567,14 +539,16 @@ Resources:
               - secretsmanager:DescribeSecret
             Effect: Allow
             Resource:
-              Ref: VSCodeIdeIdePasswordSecret39AD78F3
+              Ref: VSCodeIdePasswordSecret
         Version: "2012-10-17"
-      PolicyName: VSCodeIdeIdePasswordExporterFunctionServiceRoleDefaultPolicy0FACB966
+      PolicyName: VSCodeIdePasswordExporterFunctionServiceRolePolicy
       Roles:
-        - Ref: VSCodeIdeIdePasswordExporterFunctionServiceRoleAC3A4C16
-  VSCodeIdeIdePasswordExporterFunction9E9A4082:
+        - Ref: VSCodeIdePasswordExporterFunctionServiceRole
+
+  VSCodeIdePasswordExporterFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: ide-password-lambda
       Code:
         ZipFile: |-
           import traceback
@@ -609,23 +583,23 @@ Resources:
                       responseData = {'Error': tb_err}
                   finally:
                       cfnresponse.send(event, context, status, responseData, 'CustomResourcePhysicalID')
-      FunctionName: ide-password-lambda
       Handler: index.lambda_handler
       Role:
         Fn::GetAtt:
-          - VSCodeIdeIdePasswordExporterFunctionServiceRoleAC3A4C16
+          - VSCodeIdePasswordExporterFunctionServiceRole
           - Arn
       Runtime: python3.13
       Timeout: 180
     DependsOn:
-      - VSCodeIdeIdePasswordExporterFunctionServiceRoleDefaultPolicy0FACB966
-      - VSCodeIdeIdePasswordExporterFunctionServiceRoleAC3A4C16
-  VSCodeIdeIdePasswordExporter93551A8E:
+      - VSCodeIdePasswordExporterFunctionServiceRolePolicy
+      - VSCodeIdePasswordExporterFunctionServiceRole
+
+  VSCodeIdePasswordExporter:
     Type: AWS::CloudFormation::CustomResource
     Properties:
       ServiceToken:
         Fn::GetAtt:
-          - VSCodeIdeIdePasswordExporterFunction9E9A4082
+          - VSCodeIdePasswordExporterFunction
           - Arn
       PasswordName:
         Fn::Join:
@@ -638,7 +612,7 @@ Resources:
                         - 6
                         - Fn::Split:
                             - ":"
-                            - Ref: VSCodeIdeIdePasswordSecret39AD78F3
+                            - Ref: VSCodeIdePasswordSecret
             - Fn::Select:
                 - 1
                 - Fn::Split:
@@ -647,7 +621,7 @@ Resources:
                         - 6
                         - Fn::Split:
                             - ":"
-                            - Ref: VSCodeIdeIdePasswordSecret39AD78F3
+                            - Ref: VSCodeIdePasswordSecret
             - Fn::Select:
                 - 2
                 - Fn::Split:
@@ -656,10 +630,11 @@ Resources:
                         - 6
                         - Fn::Split:
                             - ":"
-                            - Ref: VSCodeIdeIdePasswordSecret39AD78F3
+                            - Ref: VSCodeIdePasswordSecret
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-  VSCodeIdeIdeBootstrapDocument8DDB05AD:
+
+  VSCodeIdeBootstrapDocument:
     Type: AWS::SSM::Document
     Properties:
       Content:
@@ -935,15 +910,15 @@ Resources:
                         sudo -H -i -u ec2-user bash -c "~/code-server-on-aws/scripts/ide.sh"
                       codeServerVersion: 4.98.2
                       instanceIamRoleName:
-                        Ref: VSCodeIdeIdeRole21951A1F
+                        Ref: VSCodeIdeEc2Role
                       splashUrl: ""
                       instanceIamRoleArn:
                         Fn::GetAtt:
-                          - VSCodeIdeIdeRole21951A1F
+                          - VSCodeIdeEc2Role
                           - Arn
                       readmeUrl: ""
                       waitConditionHandleUrl:
-                        Ref: VSCodeIdeIdeBootstrapWaitConditionHandle0A599C82
+                        Ref: VSCodeIdeBootstrapWaitConditionHandle
                       extensions: ms-azuretools.vscode-docker,hashicorp.terraform,vscode-icons-team.vscode-icons,redhat.vscode-yaml
 
                       domain: ""
@@ -961,7 +936,7 @@ Resources:
                                         - 6
                                         - Fn::Split:
                                             - ":"
-                                            - Ref: VSCodeIdeIdePasswordSecret39AD78F3
+                                            - Ref: VSCodeIdePasswordSecret
                             - Fn::Select:
                                 - 1
                                 - Fn::Split:
@@ -970,7 +945,7 @@ Resources:
                                         - 6
                                         - Fn::Split:
                                             - ":"
-                                            - Ref: VSCodeIdeIdePasswordSecret39AD78F3
+                                            - Ref: VSCodeIdePasswordSecret
                             - Fn::Select:
                                 - 2
                                 - Fn::Split:
@@ -979,16 +954,18 @@ Resources:
                                         - 6
                                         - Fn::Split:
                                             - ":"
-                                            - Ref: VSCodeIdeIdePasswordSecret39AD78F3
+                                            - Ref: VSCodeIdePasswordSecret
             name: IdeBootstrapFunction
             action: aws:runShellScript
       DocumentFormat: YAML
       DocumentType: Command
       Name: ide-bootstrap-document
       UpdateMethod: NewVersion
-  VSCodeIdeIdeBootstrapFunctionServiceRole45BD56C6:
+
+  VSCodeIdeBootstrapFunctionServiceRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: VSCodeIdeBootstrapFunctionServiceRole
       AssumeRolePolicyDocument:
         Statement:
           - Action: sts:AssumeRole
@@ -1002,7 +979,8 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  VSCodeIdeIdeBootstrapFunctionServiceRoleDefaultPolicyA4D18BC6:
+
+  VSCodeIdeBootstrapFunctionServiceRoleDefaultPolicy:
     Type: AWS::IAM::Policy
     Properties:
       PolicyDocument:
@@ -1011,7 +989,7 @@ Resources:
             Effect: Allow
             Resource:
               Fn::GetAtt:
-                - VSCodeIdeIdeRole21951A1F
+                - VSCodeIdeEc2Role
                 - Arn
           - Action:
               - ec2:DescribeInstances
@@ -1022,12 +1000,14 @@ Resources:
             Effect: Allow
             Resource: "*"
         Version: "2012-10-17"
-      PolicyName: VSCodeIdeIdeBootstrapFunctionServiceRoleDefaultPolicyA4D18BC6
+      PolicyName: VSCodeIdeBootstrapFunctionServiceRoleDefaultPolicy
       Roles:
-        - Ref: VSCodeIdeIdeBootstrapFunctionServiceRole45BD56C6
-  VSCodeIdeIdeBootstrapFunctionADFBCE22:
+        - Ref: VSCodeIdeBootstrapFunctionServiceRole
+
+  VSCodeIdeBootstrapFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: ide-bootstrap-lambda
       Code:
         ZipFile: |-
           from __future__ import print_function
@@ -1099,32 +1079,33 @@ Resources:
                       responseData = {'Error': tb_err}
                   finally:
                       cfnresponse.send(event, context, status, responseData, 'CustomResourcePhysicalID')
-      FunctionName: ide-bootstrap-lambda
       Handler: index.lambda_handler
       Role:
         Fn::GetAtt:
-          - VSCodeIdeIdeBootstrapFunctionServiceRole45BD56C6
+          - VSCodeIdeBootstrapFunctionServiceRole
           - Arn
       Runtime: python3.13
       Timeout: 900
     DependsOn:
-      - VSCodeIdeIdeBootstrapFunctionServiceRoleDefaultPolicyA4D18BC6
-      - VSCodeIdeIdeBootstrapFunctionServiceRole45BD56C6
-  VSCodeIdeIdeBootstrapResourceC2C4DC11:
+      - VSCodeIdeBootstrapFunctionServiceRoleDefaultPolicy
+      - VSCodeIdeBootstrapFunctionServiceRole
+
+  VSCodeIdeBootstrapResource:
     Type: AWS::CloudFormation::CustomResource
     Properties:
       ServiceToken:
         Fn::GetAtt:
-          - VSCodeIdeIdeBootstrapFunctionADFBCE22
+          - VSCodeIdeBootstrapFunction
           - Arn
       LogGroupName:
-        Ref: VSCodeIdeIdeLogGroup364F2B78
+        Ref: VSCodeIdeLogGroup
       SsmDocument:
-        Ref: VSCodeIdeIdeBootstrapDocument8DDB05AD
+        Ref: VSCodeIdeBootstrapDocument
       InstanceId:
-        Ref: VSCodeIdeIdeEC2Instance846AE373
+        Ref: VSCodeIdeEC2Instance
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+
 Outputs:
   IdeUrl:
     Description: Workshop IDE Url
@@ -1133,7 +1114,7 @@ Outputs:
         - ""
         - - https://
           - Fn::GetAtt:
-              - VSCodeIdeIdeDistribution613960F4
+              - VSCodeIdeDistribution
               - DomainName
     Export:
       Name: ide-url
@@ -1141,11 +1122,7 @@ Outputs:
     Description: Workshop IDE Password
     Value:
       Fn::GetAtt:
-        - VSCodeIdeIdePasswordExporter93551A8E
+        - VSCodeIdePasswordExporter
         - password
     Export:
       Name: ide-password
-Parameters:
-  SsmParameterValueawsserviceamiamazonlinuxlatestal2023amikernel61x8664C96584B6F00A464EAD1953AFF4B05118Parameter:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
