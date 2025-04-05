@@ -314,6 +314,22 @@ Resources:
       VpcId:
         Ref: IdeVpc
 
+  VSCodeIdeAllowAllSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: IDE allow all trafic security group FiiPactic, should be disabled
+      GroupName: ide-allow-all-sg
+      SecurityGroupIngress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: Allow all inbound traffic by default
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      VpcId:
+        Ref: IdeVpc
+
   VSCodeIdeSecurityGroupfromIndirectPeer:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -381,6 +397,10 @@ Resources:
         Ref: SsmLatestAmiParameter
       InstanceType: t3.medium
       SecurityGroupIds:
+        - Fn::GetAtt:
+            - VSCodeIdeAllowAllSecurityGroup
+            - GroupId
+
         - Fn::GetAtt:
             - VSCodeIdeSecurityGroup
             - GroupId
