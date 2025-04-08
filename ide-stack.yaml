@@ -220,7 +220,6 @@ Resources:
 
   VSCodeIdePrefixListFunction:
     Type: AWS::Lambda::Function
-    DependsOn: VSCodeIdePrefixListFunctionLogGroup
     Properties:
       FunctionName: !Sub "${AWS::StackName}-prefix-list-function"
       LoggingConfig:
@@ -495,7 +494,6 @@ Resources:
 
   VSCodeIdePasswordExporterFunction:
     Type: AWS::Lambda::Function
-    DependsOn: VSCodeIdePasswordExporterFunctionLogGroup
     Properties:
       FunctionName: !Sub "${AWS::StackName}-password-exporter-function"
       LoggingConfig:
@@ -922,7 +920,6 @@ Resources:
 
   VSCodeIdeBootstrapFunction:
     Type: AWS::Lambda::Function
-    DependsOn: VSCodeIdeBootstrapFunctionLogGroup
     Properties:
       FunctionName: !Sub "${AWS::StackName}-bootstrap-function"
       LoggingConfig:
