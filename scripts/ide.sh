@@ -128,6 +128,4 @@ source /etc/profile.d/workshop.sh
 aws configure set default.region "${AWS_REGION}"
 aws configure get default.region
 
-# env
-
 echo "IDE setup is complete."

@@ -1,7 +1,16 @@
 Parameters:
+  LambdaRuntime:
+    Type: String
+    Default: python3.13
+    AllowedValues:
+      - python3.12
+      - python3.13
+    Description: The runtime version for Lambda functions
+
   SsmLatestAmiParameter:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
+
 Resources:
   IdeVpc:
     Type: AWS::EC2::VPC
@@ -54,7 +63,6 @@ Resources:
         Ref: IdeVpcIGW
       RouteTableId:
         Ref: IdeVpcPublicSubnet1RouteTable
-
 
   IdeVpcPublicSubnet2Subnet:
     Type: AWS::EC2::Subnet
@@ -207,7 +215,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/lambda/${AWS::StackName}-prefix-list-function"
-      RetentionInDays: 7
+      RetentionInDays: 1
     DeletionPolicy: Delete
 
   VSCodeIdePrefixListFunction:
@@ -219,7 +227,7 @@ Resources:
         LogGroup: !Ref VSCodeIdePrefixListFunctionLogGroup
       Handler: index.lambda_handler
       Role: !GetAtt VSCodeIdePrefixListFunctionServiceRole.Arn
-      Runtime: python3.12
+      Runtime: !Ref LambdaRuntime
       Timeout: 180
       Code:
         ZipFile: |-
@@ -494,7 +502,7 @@ Resources:
         LogGroup: !Ref VSCodeIdePasswordExporterFunctionLogGroup
       Handler: index.lambda_handler
       Role: !GetAtt VSCodeIdePasswordExporterFunctionServiceRole.Arn
-      Runtime: python3.12
+      Runtime: !Ref LambdaRuntime
       Timeout: 180
       Code:
         ZipFile: |-
@@ -921,7 +929,7 @@ Resources:
         LogGroup: !Ref VSCodeIdeBootstrapFunctionLogGroup
       Handler: index.lambda_handler
       Role: !GetAtt VSCodeIdeBootstrapFunctionServiceRole.Arn
-      Runtime: python3.12
+      Runtime: !Ref LambdaRuntime
       Timeout: 900
       Code:
         ZipFile: |-
@@ -1018,10 +1026,6 @@ Outputs:
   IdeUrl:
     Description: Workshop IDE Url
     Value: !Sub https://${VSCodeIdeDistribution.DomainName}
-    Export:
-      Name: ide-url
   IdePassword:
     Description: Workshop IDE Password
     Value: !GetAtt VSCodeIdePasswordExporter.password
-    Export:
-      Name: ide-password
