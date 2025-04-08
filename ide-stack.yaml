@@ -624,14 +624,6 @@ Resources:
                       # Generate an SSH key for ec2-user
                       sudo -u ec2-user bash -c "ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa -m pem <<< y"
 
-                      echo "Installing AWS CLI..."
-
-                      # Install AWS CLI
-                      curl -LSsf -o /tmp/aws-cli.zip https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip
-                      unzip -q -d /tmp /tmp/aws-cli.zip
-                      /tmp/aws/install --update
-                      rm -rf /tmp/aws*
-
                       echo "export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)" | sudo tee -a /etc/profile.d/workshop.sh
                       source /etc/profile.d/workshop.sh
 
@@ -805,8 +797,6 @@ Resources:
                         echo '{ "query": { "folder": "/home/ec2-user/environment" } }' > /home/ec2-user/.local/share/code-server/coder.json
                       fi
 
-                      ${installGitea}
-
                       echo "Running custom bootstrap script..."
 
                       ${customBootstrapScript}
@@ -836,39 +826,13 @@ Resources:
                       extensions: ms-azuretools.vscode-docker,hashicorp.terraform,vscode-icons-team.vscode-icons,redhat.vscode-yaml
 
                       domain: ""
-                      installGitea: echo bootstrapGitea was not provided
                       terminalOnStartup: "true"
                       environmentContentsZip: ""
-                      passwordName:
-                        Fn::Join:
-                          - "-"
-                          - - Fn::Select:
-                                - 0
-                                - Fn::Split:
-                                    - "-"
-                                    - Fn::Select:
-                                        - 6
-                                        - Fn::Split:
-                                            - ":"
-                                            - Ref: VSCodeIdePasswordSecret
-                            - Fn::Select:
-                                - 1
-                                - Fn::Split:
-                                    - "-"
-                                    - Fn::Select:
-                                        - 6
-                                        - Fn::Split:
-                                            - ":"
-                                            - Ref: VSCodeIdePasswordSecret
-                            - Fn::Select:
-                                - 2
-                                - Fn::Split:
-                                    - "-"
-                                    - Fn::Select:
-                                        - 6
-                                        - Fn::Split:
-                                            - ":"
-                                            - Ref: VSCodeIdePasswordSecret
+                      passwordName: !Join
+                        - "-"
+                        - - !Select [0, !Split ["-", !Select [6, !Split [":", !Ref VSCodeIdePasswordSecret]]]]
+                          - !Select [1, !Split ["-", !Select [6, !Split [":", !Ref VSCodeIdePasswordSecret]]]]
+                          - !Select [2, !Split ["-", !Select [6, !Split [":", !Ref VSCodeIdePasswordSecret]]]]
             name: IdeBootstrapFunction
             action: aws:runShellScript
 
