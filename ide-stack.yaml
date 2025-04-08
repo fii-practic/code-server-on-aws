@@ -369,7 +369,7 @@ Resources:
           AssociatePublicIpAddress: true
       Tags:
         - Key: Name
-          Value: IDE
+          Value: !Sub "${AWS::StackName}-CodeServer"
       UserData: !Base64 '#!/bin/bash'
       EbsOptimized: true
     DependsOn:
