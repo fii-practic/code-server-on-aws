@@ -2,9 +2,6 @@ set -e
 
 cd /tmp
 
-# temporarily disable the libuv use of io_uring https://github.com/amazonlinux/amazon-linux-2023/issues/840
-export UV_USE_IO_URING=0
-
 # echo "Installing additional packages ..."
 # sudo dnf install -y jq
 
@@ -27,7 +24,7 @@ export UV_USE_IO_URING=0
 # npm -v
 # npm install -g aws-cdk
 # cdk version
-# npm install -g artillery
+# npm install -g artillerycode-server
 # artillery -v
 
 # echo "Installing Java 21 and setting 21 as default ..."
@@ -68,7 +65,7 @@ export UV_USE_IO_URING=0
 # }
 # EOF
 
-sudo systemctl restart docker
+# sudo systemctl restart docker
 # docker info --format '{{json .Driver}}'
 # docker info --format '{{json .DriverStatus}}'
 
@@ -81,12 +78,12 @@ sudo systemctl restart docker
 # docker run --privileged --rm tonistiigi/binfmt --install all
 # docker buildx create --use --driver=docker-container
 
-echo "Installing docker compose ..."
-DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-mkdir -p $DOCKER_CONFIG/cli-plugins
-curl -SL https://github.com/docker/compose/releases/download/v2.33.1/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
-chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
-docker compose version
+# echo "Installing docker compose ..."
+# DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+# mkdir -p $DOCKER_CONFIG/cli-plugins
+# curl -SL https://github.com/docker/compose/releases/download/v2.33.1/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+# chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+# docker compose version
 
 # echo "Installing kubectl ..."
 # # https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
@@ -121,14 +118,14 @@ docker compose version
 # echo "Installing k9s ..."
 # curl -sS https://webinstall.dev/k9s | bash
 
-echo "Installing Session Manager plugin ..."
-curl -sS "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm" -o "session-manager-plugin.rpm"
-sudo yum -q install -y session-manager-plugin.rpm
-session-manager-plugin
-rm session-manager-plugin.rpm
+# echo "Installing Session Manager plugin ..."
+# curl -sS "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm" -o "session-manager-plugin.rpm"
+# sudo yum -q install -y session-manager-plugin.rpm
+# session-manager-plugin
+# rm session-manager-plugin.rpm
 
 source /etc/profile.d/workshop.sh
-aws configure set default.region ${AWS_REGION}
+aws configure set default.region "${AWS_REGION}"
 aws configure get default.region
 
 # env
