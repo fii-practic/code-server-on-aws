@@ -815,7 +815,7 @@ Resources:
 
                         echo '=== Setup IDE ==='
                         sudo -H -i -u ec2-user bash -c "~/code-server-on-aws/scripts/ide.sh"
-                      codeServerVersion: 4.99.0
+                      codeServerVersion: 4.99.1
                       instanceIamRoleName:
                         Ref: VSCodeIdeEc2Role
                       splashUrl: ""
